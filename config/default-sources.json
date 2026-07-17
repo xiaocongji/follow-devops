@@ -1,0 +1,224 @@
+{
+  "x_accounts": [
+    {
+      "name": "Kelsey Hightower",
+      "handle": "kelseyhightower",
+      "bio": "Staff Engineer at Google, Kubernetes co-creator, author of 'Kubernetes: Up and Running'",
+      "topics": ["kubernetes", "cloud-native", "devops"]
+    },
+    {
+      "name": "Liz Rice",
+      "handle": "lizrice",
+      "bio": "Chief Open Source Officer at Isovalent, eBPF expert, CNCF TOC chair",
+      "topics": ["kubernetes", "ebpf", "cloud-native", "security"]
+    },
+    {
+      "name": "Charity Majors",
+      "handle": "mipsytipsy",
+      "bio": "Co-founder & CTO at Honeycomb.io, observability pioneer, ex-Facebook",
+      "topics": ["observability", "devops", "engineering-culture", "oncall"]
+    },
+    {
+      "name": "Corey Quinn",
+      "handle": "quinnypig",
+      "bio": "Chief Cloud Economist at The Duckbill Group, AWS cost optimization, Screaming in the Cloud podcast",
+      "topics": ["aws", "cloud-economics", "cost-optimization"]
+    },
+    {
+      "name": "Cindy Sridharan",
+      "handle": "copyconstruct",
+      "bio": "Author of 'Distributed Systems Observability', platform engineering at large scale",
+      "topics": ["observability", "distributed-systems", "platform-engineering"]
+    },
+    {
+      "name": "Tim Hockin",
+      "handle": "thockin",
+      "bio": "Principal Engineer at Google, Kubernetes co-founder and core maintainer",
+      "topics": ["kubernetes", "networking", "cloud-native"]
+    },
+    {
+      "name": "Brendan Burns",
+      "handle": "brendandburns",
+      "bio": "Corporate VP at Microsoft Azure, Kubernetes co-creator",
+      "topics": ["kubernetes", "azure", "cloud-native"]
+    },
+    {
+      "name": "Joe Beda",
+      "handle": "jbeda",
+      "bio": "Principal Engineer at VMware, Kubernetes co-creator",
+      "topics": ["kubernetes", "cloud-native"]
+    },
+    {
+      "name": "Gerred Dillon",
+      "handle": "gerred",
+      "bio": "Platform engineering, GitOps, Kubernetes operator patterns",
+      "topics": ["kubernetes", "gitops", "platform-engineering"]
+    },
+    {
+      "name": "Nicki Watt",
+      "handle": "nickijwatt",
+      "bio": "HashiCorp Ambassador, Terraform expert, platform engineering at OpenCredo",
+      "topics": ["terraform", "hashicorp", "platform-engineering"]
+    },
+    {
+      "name": "Jeff Barr",
+      "handle": "jeffbarr",
+      "bio": "Chief Evangelist at AWS, AWS blog author since 2004",
+      "topics": ["aws", "cloud", "new-releases"]
+    },
+    {
+      "name": "Werner Vogels",
+      "handle": "Werner",
+      "bio": "CTO at Amazon, distributed systems, 'everything fails all the time'",
+      "topics": ["aws", "distributed-systems", "architecture"]
+    },
+    {
+      "name": "Forrest Brazeal",
+      "handle": "forrestbrazeal",
+      "bio": "Head of Developer Media at Google Cloud, Cloud Irregular newsletter, serverless expert",
+      "topics": ["gcp", "serverless", "cloud-native", "aws"]
+    },
+    {
+      "name": "Kat Cosgrove",
+      "handle": "Dixie3Flatline",
+      "bio": "Staff Developer Advocate at Dell Technologies, CNCF TAG contributor, Kubernetes SIG",
+      "topics": ["kubernetes", "cloud-native", "devops"]
+    },
+    {
+      "name": "Ahmet Balkan",
+      "handle": "ahmetb",
+      "bio": "Staff Engineer at Google, gRPC, Cloud Run, Knative core contributor",
+      "topics": ["gcp", "kubernetes", "cloud-run", "serverless"]
+    },
+    {
+      "name": "Kaslin Fields",
+      "handle": "kaslinfields",
+      "bio": "Developer Advocate at Google Cloud, Kubernetes contributor, CNCF Ambassador",
+      "topics": ["kubernetes", "gcp", "cloud-native"]
+    },
+    {
+      "name": "Adam Jacob",
+      "handle": "adamhjk",
+      "bio": "Co-founder of Chef, co-founder of System Initiative, DevOps philosophy",
+      "topics": ["devops", "infrastructure-as-code", "platform-engineering"]
+    },
+    {
+      "name": "Mitchell Hashimoto",
+      "handle": "mitchellh",
+      "bio": "Co-founder of HashiCorp, creator of Vagrant and Terraform",
+      "topics": ["terraform", "infrastructure-as-code", "devops"]
+    },
+    {
+      "name": "Beyang Liu",
+      "handle": "beyang",
+      "bio": "Co-founder & CTO at Sourcegraph, developer tooling, platform engineering",
+      "topics": ["developer-tools", "platform-engineering"]
+    },
+    {
+      "name": "BerriAI / LiteLLM",
+      "handle": "BerriAI",
+      "bio": "Open-source LiteLLM proxy — unified API for 100+ LLMs, rate limiting, cost tracking",
+      "topics": ["litellm", "ai-infrastructure", "llm-proxy", "mlops"]
+    },
+    {
+      "name": "Krrish Dholakia",
+      "handle": "krrishdholakia",
+      "bio": "Founder of BerriAI / LiteLLM, AI infrastructure, LLM gateway",
+      "topics": ["litellm", "ai-infrastructure", "llm-proxy"]
+    },
+    {
+      "name": "Aurelie Vache",
+      "handle": "aurelievache",
+      "bio": "Staff DevRel at OVHcloud, CNCF Ambassador, Kubernetes sketchnotes author",
+      "topics": ["kubernetes", "cloud-native", "devrel"]
+    },
+    {
+      "name": "Viktor Farcic",
+      "handle": "vfarcic",
+      "bio": "Developer Advocate at Upbound, Crossplane contributor, DevOps Toolkit YouTube",
+      "topics": ["kubernetes", "crossplane", "gitops", "platform-engineering"]
+    },
+    {
+      "name": "Guillermo Rauch",
+      "handle": "rauchg",
+      "bio": "CEO at Vercel, edge computing, serverless, developer experience",
+      "topics": ["serverless", "edge-computing", "developer-experience"]
+    },
+    {
+      "name": "Michael Hausenblas",
+      "handle": "mhausenblas",
+      "bio": "Solution Engineering Lead at AWS, observability, eBPF, CNCF TAG Observability",
+      "topics": ["aws", "observability", "kubernetes", "ebpf"]
+    }
+  ],
+  "podcasts": [
+    {
+      "name": "Kubernetes Podcast from Google",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@KubernetesPodcast",
+      "channelHandle": "KubernetesPodcast"
+    },
+    {
+      "name": "DevOps Toolkit",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@DevOpsToolkit",
+      "channelHandle": "DevOpsToolkit"
+    },
+    {
+      "name": "Screaming in the Cloud",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@ScreamingintheCloud",
+      "channelHandle": "ScreamingintheCloud"
+    },
+    {
+      "name": "AWS re:Invent Sessions",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@AWSEventsChannel",
+      "channelHandle": "AWSEventsChannel"
+    },
+    {
+      "name": "KubeCon Sessions",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@cncf",
+      "channelHandle": "cncf"
+    }
+  ],
+  "blogs": [
+    {
+      "name": "AWS News Blog",
+      "type": "rss",
+      "url": "https://aws.amazon.com/blogs/aws/feed/",
+      "fetchMethod": "rss"
+    },
+    {
+      "name": "Google Cloud Blog",
+      "type": "rss",
+      "url": "https://cloud.google.com/feeds/gcp-release-notes.xml",
+      "fetchMethod": "rss"
+    },
+    {
+      "name": "Azure Blog",
+      "type": "rss",
+      "url": "https://azure.microsoft.com/en-us/blog/feed/",
+      "fetchMethod": "rss"
+    },
+    {
+      "name": "Kubernetes Blog",
+      "type": "rss",
+      "url": "https://kubernetes.io/feed.xml",
+      "fetchMethod": "rss"
+    },
+    {
+      "name": "LiteLLM Blog",
+      "type": "scrape",
+      "indexUrl": "https://blog.litellm.ai",
+      "fetchMethod": "http"
+    },
+    {
+      "name": "CNCF Blog",
+      "type": "rss",
+      "url": "https://www.cncf.io/feed/",
+      "fetchMethod": "rss"
+    }
+  ]
+}

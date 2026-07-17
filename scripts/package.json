@@ -1,0 +1,9 @@
+{
+  "name": "follow-devops-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Scripts for the follow-devops skill",
+  "dependencies": {
+    "dotenv": "^16.0.0"
+  }
+}
