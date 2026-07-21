@@ -190,7 +190,7 @@ openclaw cron run <jobId>
 **Non-persistent + Telegram or Email:**
 ```bash
 SKILL_DIR="<absolute path to the skill directory>"
-(crontab -l 2>/dev/null; echo "<cron expression> cd $SKILL_DIR/scripts && node prepare-digest.js 2>/dev/null | node deliver.js 2>/dev/null") | crontab -
+(crontab -l 2>/dev/null; echo "<cron expression> cd $SKILL_DIR/scripts && node prepare-digest.js 2>/dev/null > /tmp/fd-raw.json && node deliver.js --json /tmp/fd-raw.json 2>/dev/null") | crontab -
 ```
 
 **Non-persistent + on-demand only:** Skip cron. "Just type /devops for your digest."
@@ -289,15 +289,17 @@ Read `config.language`:
 
 ### Step 6: Deliver
 
-Read `config.delivery.method`:
+Always pipe the raw JSON from prepare-digest.js directly through deliver.js using `--json`.
+Do NOT remix into plain text first — the `--json` path renders rich HTML cards with images,
+source logos, and proper layout. The `--file` / `--message` / stdin text paths strip all
+formatting and images.
 
-**If "telegram" or "email":**
 ```bash
-echo '<digest text>' > /tmp/fd-digest.txt
-cd ${CLAUDE_SKILL_DIR}/scripts && node deliver.js --file /tmp/fd-digest.txt 2>/dev/null
+cd <SKILL_DIR>/scripts && node prepare-digest.js 2>/dev/null > /tmp/fd-raw.json && node deliver.js --json /tmp/fd-raw.json 2>/dev/null
 ```
 
-**If "stdout":** Output the digest directly.
+This applies regardless of `config.delivery.method` (html, stdout, telegram, email).
+deliver.js reads the method from config.json and routes accordingly.
 
 ---
 
