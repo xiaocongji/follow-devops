@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 // ============================================================================
-// Follow Builders — Delivery Script
+// Follow DevOps — Delivery Script
 // ============================================================================
 // Sends a digest to the user via their chosen delivery method.
-// Supports: Telegram bot, Email (via Resend), or stdout (default).
+// Supports: Telegram bot, Email (via Gmail SMTP), or stdout (default).
 //
 // Usage:
 //   echo "digest text" | node deliver.js
@@ -12,11 +12,11 @@
 //   node deliver.js --file /path/to/digest.txt
 //
 // The script reads delivery config from ~/.follow-devops/config.json
-// and API keys from ~/.follow-devops/.env
+// and credentials from ~/.follow-devops/.env
 //
 // Delivery methods:
 //   - "telegram": sends via Telegram Bot API (needs TELEGRAM_BOT_TOKEN + chat ID)
-//   - "email": sends via Resend API (needs RESEND_API_KEY + email address)
+//   - "email": sends via Gmail SMTP (needs GMAIL_USER + GMAIL_APP_PASSWORD)
 //   - "stdout" (default): just prints to terminal
 // ============================================================================
 
@@ -122,31 +122,25 @@ async function sendTelegram(text, botToken, chatId) {
   }
 }
 
-// -- Email Delivery (Resend) -------------------------------------------------
+// -- Email Delivery (Gmail SMTP) ---------------------------------------------
 
-// Sends the digest via Resend's email API.
-// The user provides their own Resend API key and email address.
-async function sendEmail(text, apiKey, toEmail) {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      from: 'DevOps Digest <digest@resend.dev>',
-      to: [toEmail],
-      subject: `DevOps Digest — ${new Date().toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      })}`,
-      text: text
-    })
+// Sends the digest via Gmail SMTP using an App Password.
+// No third-party account needed — just a Google App Password.
+// Setup: https://myaccount.google.com/apppasswords (requires 2-step verification)
+async function sendEmail(text, gmailUser, appPassword, toEmail) {
+  const { createTransport } = await import('nodemailer');
+  const transporter = createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: appPassword }
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`Resend API error: ${err.message || JSON.stringify(err)}`);
-  }
+  await transporter.sendMail({
+    from: `DevOps Digest <${gmailUser}>`,
+    to: toEmail,
+    subject: `DevOps Digest — ${new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    })}`,
+    text
+  });
 }
 
 // -- Main --------------------------------------------------------------------
@@ -185,11 +179,13 @@ async function main() {
       }
 
       case 'email': {
-        const apiKey = process.env.RESEND_API_KEY;
+        const gmailUser = process.env.GMAIL_USER;
+        const appPassword = process.env.GMAIL_APP_PASSWORD;
         const toEmail = delivery.email;
-        if (!apiKey) throw new Error('RESEND_API_KEY not found in .env');
+        if (!gmailUser) throw new Error('GMAIL_USER not found in .env');
+        if (!appPassword) throw new Error('GMAIL_APP_PASSWORD not found in .env');
         if (!toEmail) throw new Error('delivery.email not found in config.json');
-        await sendEmail(digestText, apiKey, toEmail);
+        await sendEmail(digestText, gmailUser, appPassword, toEmail);
         console.log(JSON.stringify({
           status: 'ok',
           method: 'email',
