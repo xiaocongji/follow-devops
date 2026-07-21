@@ -122,6 +122,60 @@ async function sendTelegram(text, botToken, chatId) {
   }
 }
 
+// -- HTML Delivery -----------------------------------------------------------
+
+// Renders the digest as a styled HTML file and opens it in the default browser.
+async function sendHtml(text) {
+  const { writeFile } = await import('fs/promises');
+  const { exec } = await import('child_process');
+
+  // Convert plain text to HTML — handle bold (**text**), URLs, and line breaks
+  const body = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1">$1</a>')
+    .replace(/^(#+)\s+(.+)$/gm, (_, hashes, title) => {
+      const level = Math.min(hashes.length + 1, 4);
+      return `<h${level}>${title}</h${level}>`;
+    })
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps Digest</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 720px; margin: 48px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; }
+    h1 { font-size: 1.5rem; border-bottom: 2px solid #0070f3; padding-bottom: 8px; color: #0070f3; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; color: #333; text-transform: uppercase; letter-spacing: 0.05em; }
+    h3 { font-size: 1rem; margin-top: 1.5rem; }
+    a { color: #0070f3; text-decoration: none; word-break: break-all; }
+    a:hover { text-decoration: underline; }
+    ul { padding-left: 1.2rem; }
+    li { margin: 4px 0; }
+    p { margin: 0.6rem 0; }
+    strong { color: #000; }
+    hr { border: none; border-top: 1px solid #eee; margin: 2rem 0; }
+    .meta { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+  <p class="meta">Generated ${new Date().toLocaleString()}</p>
+  <p>${body}</p>
+</body>
+</html>`;
+
+  const outPath = '/tmp/devops-digest.html';
+  await writeFile(outPath, html, 'utf-8');
+  exec(`open "${outPath}"`);
+  return outPath;
+}
+
 // -- Slack Delivery ----------------------------------------------------------
 
 // Sends the digest via a Slack Incoming Webhook.
@@ -193,6 +247,12 @@ async function main() {
 
   try {
     switch (delivery.method) {
+      case 'html': {
+        const outPath = await sendHtml(digestText);
+        console.log(JSON.stringify({ status: 'ok', method: 'html', message: `Digest opened in browser: ${outPath}` }));
+        break;
+      }
+
       case 'slack': {
         const webhookUrl = process.env.SLACK_WEBHOOK_URL;
         if (!webhookUrl) throw new Error('SLACK_WEBHOOK_URL not found in .env');
