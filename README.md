@@ -9,31 +9,24 @@ release notes.
 
 ## What You Get
 
-A daily or weekly digest delivered to your preferred messaging app (Telegram, email,
-or in-chat) with:
+A daily or weekly digest rendered as a **rich HTML page** (opens in your browser) with:
 
-- Key posts and insights from 25 curated DevOps practitioners on X/Twitter
-- Official release announcements from AWS, Google Cloud, Azure, Kubernetes, LiteLLM, and CNCF
-- Summaries of new episodes from top DevOps/cloud-native YouTube channels
+- Card grid of official release announcements from AWS, Kubernetes, CNCF — with cover images
+- X/Twitter posts from 25 curated DevOps practitioners
+- Summaries of new DevOps/cloud-native YouTube episodes
 - Breaking changes, deprecations, and security notices called out explicitly
 - Available in English, Chinese, or bilingual
 
+![Digest preview showing card grid with AWS and CNCF blog posts](examples/preview.png)
+
 ## Quick Start
 
-1. Install the skill:
-   ```bash
-   git clone https://github.com/xiaocongji/follow-devops.git ~/.claude/skills/follow-devops
-   cd ~/.claude/skills/follow-devops/scripts && npm install
-   ```
-2. In Claude Code, say "set up follow devops" or invoke `/devops`
-3. The agent walks you through setup conversationally — no config files to edit
+```bash
+git clone https://github.com/xiaocongji/follow-devops.git ~/.claude/skills/follow-devops
+cd ~/.claude/skills/follow-devops/scripts && npm install
+```
 
-The agent will ask you:
-- How often you want your digest (daily or weekly) and what time
-- What language you prefer
-- How you want it delivered (Telegram, email, or in-chat)
-
-Your first digest arrives immediately after setup.
+Then in Claude Code, type `/devops` to run the skill.
 
 ## Invoking
 
@@ -41,7 +34,19 @@ Your first digest arrives immediately after setup.
 /devops
 ```
 
-Type `/devops` anytime in Claude Code to get your digest on demand.
+Type `/devops` anytime to get a fresh digest opened in your browser. No delivery setup required.
+
+## Delivery Methods
+
+| Method | Setup | Notes |
+|--------|-------|-------|
+| **HTML** (default) | None | Opens `/tmp/devops-digest.html` in your browser |
+| **Telegram** | Bot token + chat ID | Instant push to phone |
+| **Email** | Gmail App Password | Sends from your Gmail via SMTP |
+| **Slack** | Incoming Webhook URL | Posts to a channel or DM |
+| **stdout** | None | Plain text in terminal |
+
+Change delivery method by telling the agent: "Switch to Telegram delivery" etc.
 
 ## Changing Settings
 
@@ -55,16 +60,13 @@ Just tell the agent:
 
 ## Customizing the Summaries
 
-The skill uses plain-English prompt files in `prompts/` to control how content is
-summarized. You can customize them through conversation or edit them directly:
+Edit the plain-English prompt files in `prompts/` — or just tell the agent what you want and it will update them for you:
 
 - `summarize-tweets.md` — how X/Twitter posts are summarized
 - `summarize-podcast.md` — how podcast/video episodes are summarized
 - `summarize-blogs.md` — how official release blogs are summarized
-- `digest-intro.md` — the overall digest format, order, and tone
-- `translate.md` — how English content is translated to Chinese
-
-Changes take effect on the next digest run.
+- `digest-intro.md` — overall digest format, order, and tone
+- `translate.md` — Chinese translation rules
 
 ## Default Sources
 
@@ -101,41 +103,40 @@ Changes take effect on the next digest run.
 ### YouTube / Podcasts (5)
 
 - [Kubernetes Podcast from Google](https://www.youtube.com/@KubernetesPodcast)
-- [DevOps Toolkit](https://www.youtube.com/@DevOpsToolkit) — Viktor Farcic
-- [Screaming in the Cloud](https://www.youtube.com/@ScreamingintheCloud) — Corey Quinn
+- [DevOps Toolkit](https://www.youtube.com/@DevOpsToolkit)
+- [Screaming in the Cloud](https://www.youtube.com/@ScreamingintheCloud)
 - [AWS Events Channel](https://www.youtube.com/@AWSEventsChannel)
 - [CNCF (KubeCon sessions)](https://www.youtube.com/@cncf)
 
 ### Official Blogs (6)
 
-- [AWS News Blog](https://aws.amazon.com/blogs/aws/)
+- [AWS News Blog](https://aws.amazon.com/blogs/aws/) — live RSS feed with og:images
 - [Google Cloud Blog](https://cloud.google.com/blog/)
 - [Azure Blog](https://azure.microsoft.com/en-us/blog/)
 - [Kubernetes Blog](https://kubernetes.io/blog/)
 - [LiteLLM Blog](https://blog.litellm.ai)
-- [CNCF Blog](https://www.cncf.io/blog/)
+- [CNCF Blog](https://www.cncf.io/blog/) — live RSS feed with og:images
 
 ## How It Works
 
-1. `prepare-digest.js` reads your local feed files and prompts, and outputs a single JSON blob
-2. The Claude agent remixes the content into a digest following your prompt preferences
-3. `deliver.js` sends the digest to your chosen channel (Telegram, email, or stdout)
+1. `prepare-digest.js` reads feed files and prompts, outputs a single JSON blob
+2. Blog feeds are fetched live from RSS with og:images scraped from each post
+3. The Claude agent remixes the content into summaries using your prompt preferences
+4. `deliver.js --json` renders a rich HTML page with card grid and opens it in the browser
 
-> **Note:** Unlike `follow-builders`, this skill does not yet have a central hosted feed.
-> X/Twitter content requires a local feed generator connected to a data source.
-> Blog and podcast content works via direct RSS/HTTP fetching. Contributions welcome!
+> **Note:** X/Twitter content uses a local mock feed until a real feed generator is wired up. Blog and podcast content works live via RSS/HTTP.
 
 ## Requirements
 
 - Claude Code (or any Claude agent that supports skills)
 - Node.js 18+
-- Internet connection
+- Internet connection (for live RSS blog feeds)
 
-No API keys needed for blog content. Telegram or email delivery requires those respective keys (the agent guides you through setup).
+No API keys required for the default HTML delivery mode.
 
 ## Configuration
 
-Settings are stored in `~/.follow-devops/config.json`. Edit through conversation or directly:
+Settings stored in `~/.follow-devops/config.json`:
 
 ```json
 {
@@ -145,7 +146,7 @@ Settings are stored in `~/.follow-devops/config.json`. Edit through conversation
   "frequency": "daily",
   "deliveryTime": "09:00",
   "delivery": {
-    "method": "stdout"
+    "method": "html"
   },
   "onboardingComplete": true
 }
@@ -156,8 +157,8 @@ Supported languages: `en`, `zh`, `bilingual`
 ## Privacy
 
 - All configuration stays on your machine in `~/.follow-devops/`
-- API keys (Telegram, Resend) are stored locally in `~/.follow-devops/.env`
-- The skill only reads public content
+- API keys (Telegram, Gmail, Slack) stored locally in `~/.follow-devops/.env`
+- Only reads public content (RSS feeds, public blog posts, public X posts)
 
 ## License
 
