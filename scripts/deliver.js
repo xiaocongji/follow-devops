@@ -35,27 +35,30 @@ const ENV_PATH = join(USER_DIR, '.env');
 // -- Read input --------------------------------------------------------------
 
 // The digest text can come from stdin, --message flag, or --file flag
-async function getDigestText() {
+async function getDigestInput() {
   const args = process.argv.slice(2);
 
-  // Check --message flag
   const msgIdx = args.indexOf('--message');
   if (msgIdx !== -1 && args[msgIdx + 1]) {
-    return args[msgIdx + 1];
+    return { text: args[msgIdx + 1], isJson: false };
   }
 
-  // Check --file flag
   const fileIdx = args.indexOf('--file');
   if (fileIdx !== -1 && args[fileIdx + 1]) {
-    return await readFile(args[fileIdx + 1], 'utf-8');
+    return { text: await readFile(args[fileIdx + 1], 'utf-8'), isJson: false };
   }
 
-  // Read from stdin
-  const chunks = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
+  const jsonIdx = args.indexOf('--json');
+  if (jsonIdx !== -1 && args[jsonIdx + 1]) {
+    return { text: await readFile(args[jsonIdx + 1], 'utf-8'), isJson: true };
   }
-  return Buffer.concat(chunks).toString('utf-8');
+
+  const chunks = [];
+  for await (const chunk of process.stdin) { chunks.push(chunk); }
+  const text = Buffer.concat(chunks).toString('utf-8');
+  // Auto-detect JSON from stdin
+  const isJson = text.trimStart().startsWith('{');
+  return { text, isJson };
 }
 
 // -- Telegram Delivery -------------------------------------------------------
@@ -124,56 +127,163 @@ async function sendTelegram(text, botToken, chatId) {
 
 // -- HTML Delivery -----------------------------------------------------------
 
-// Renders the digest as a styled HTML file and opens it in the default browser.
-async function sendHtml(text) {
+// Source logos (inline SVG data URIs or well-known CDN URLs)
+const SOURCE_LOGOS = {
+  'AWS News Blog': 'https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png',
+  'Kubernetes Blog': 'https://kubernetes.io/images/favicon.png',
+  'CNCF Blog': 'https://www.cncf.io/wp-content/uploads/2022/07/cncf-color.png',
+  'Google Cloud Blog': 'https://www.gstatic.com/devrel-devsite/prod/v45f61267e5684083650f12c55b685498dbf4e8dfbccbb358f5d8e44e7b7d11c8/cloud/images/favicons/onecloud/favicon.ico',
+  'Azure Blog': 'https://azurecomcdn.azureedge.net/cvt-1e1d1498e09aa1abc4ff40d23e714e1cd68e4e5b84e3d8f97e96f3b0f15de1c5/images/icon/favicon.ico',
+  'LiteLLM Blog': 'https://litellm.ai/favicon.ico',
+};
+
+// Renders the digest as a rich HTML file with cards and images, opens in browser.
+// Accepts either plain text (--file) or structured JSON (--json flag).
+async function sendHtml(input, isJson = false) {
   const { writeFile } = await import('fs/promises');
   const { exec } = await import('child_process');
 
-  // Convert plain text to HTML — handle bold (**text**), URLs, and line breaks
-  const body = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1">$1</a>')
-    .replace(/^(#+)\s+(.+)$/gm, (_, hashes, title) => {
-      const level = Math.min(hashes.length + 1, 4);
-      return `<h${level}>${title}</h${level}>`;
-    })
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevOps Digest</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 720px; margin: 48px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; }
-    h1 { font-size: 1.5rem; border-bottom: 2px solid #0070f3; padding-bottom: 8px; color: #0070f3; }
-    h2 { font-size: 1.1rem; margin-top: 2rem; color: #333; text-transform: uppercase; letter-spacing: 0.05em; }
-    h3 { font-size: 1rem; margin-top: 1.5rem; }
-    a { color: #0070f3; text-decoration: none; word-break: break-all; }
-    a:hover { text-decoration: underline; }
-    ul { padding-left: 1.2rem; }
-    li { margin: 4px 0; }
-    p { margin: 0.6rem 0; }
-    strong { color: #000; }
-    hr { border: none; border-top: 1px solid #eee; margin: 2rem 0; }
-    .meta { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
-  </style>
-</head>
-<body>
-  <p class="meta">Generated ${new Date().toLocaleString()}</p>
-  <p>${body}</p>
-</body>
-</html>`;
+  let html;
+  if (isJson) {
+    html = renderJsonDigest(JSON.parse(input));
+  } else {
+    html = renderTextDigest(input);
+  }
 
   const outPath = '/tmp/devops-digest.html';
   await writeFile(outPath, html, 'utf-8');
   exec(`open "${outPath}"`);
   return outPath;
+}
+
+function esc(s = '') {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function htmlShell(title, body) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${esc(title)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+    .page { max-width: 800px; margin: 0 auto; padding: 32px 20px 64px; }
+    header { border-bottom: 3px solid #0070f3; padding-bottom: 16px; margin-bottom: 32px; }
+    header h1 { font-size: 1.6rem; color: #0070f3; }
+    header .meta { color: #888; font-size: 0.85rem; margin-top: 4px; }
+    .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin: 36px 0 12px; }
+    /* Blog cards */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); display: flex; flex-direction: column; }
+    .card-img { width: 100%; height: 160px; object-fit: cover; background: #e8edf5; }
+    .card-img-placeholder { width: 100%; height: 160px; background: linear-gradient(135deg, #e8edf5, #cdd5e0); display: flex; align-items: center; justify-content: center; }
+    .card-img-placeholder img { width: 48px; height: 48px; object-fit: contain; opacity: 0.5; }
+    .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .card-source { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0070f3; }
+    .card-title { font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
+    .card-title a { color: #1a1a1a; text-decoration: none; }
+    .card-title a:hover { color: #0070f3; }
+    .card-summary { font-size: 0.83rem; color: #555; line-height: 1.5; flex: 1; }
+    .card-date { font-size: 0.75rem; color: #aaa; }
+    /* Practitioner rows */
+    .practitioner { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 12px; display: flex; gap: 16px; align-items: flex-start; }
+    .practitioner-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #0070f3, #00c6ff); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+    .practitioner-body { flex: 1; }
+    .practitioner-name { font-weight: 700; font-size: 0.9rem; }
+    .practitioner-role { font-size: 0.78rem; color: #888; margin-bottom: 6px; }
+    .practitioner-tweet { font-size: 0.88rem; color: #333; line-height: 1.5; }
+    .practitioner-link { display: inline-block; margin-top: 8px; font-size: 0.78rem; color: #0070f3; text-decoration: none; }
+    .practitioner-link:hover { text-decoration: underline; }
+    /* Empty state */
+    .empty { color: #aaa; font-size: 0.88rem; padding: 12px 0; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    ${body}
+  </div>
+</body>
+</html>`;
+}
+
+function renderJsonDigest(data) {
+  const date = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Header
+  let body = `
+    <header>
+      <h1>DevOps Digest</h1>
+      <div class="meta">${esc(date)} &nbsp;·&nbsp; ${data.stats.blogPosts} releases &nbsp;·&nbsp; ${data.stats.xBuilders} practitioners</div>
+    </header>`;
+
+  // Blog cards
+  body += `<div class="section-title">Official Releases & Blog Posts</div><div class="cards">`;
+  for (const b of data.blogs) {
+    const logo = SOURCE_LOGOS[b.source] || '';
+    const img = b.image
+      ? `<img class="card-img" src="${esc(b.image)}" alt="" onerror="this.style.display='none'">`
+      : `<div class="card-img-placeholder">${logo ? `<img src="${esc(logo)}" alt="">` : ''}</div>`;
+    const date = b.publishedAt ? new Date(b.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    body += `
+      <div class="card">
+        ${img}
+        <div class="card-body">
+          <div class="card-source">${esc(b.source)}</div>
+          <div class="card-title"><a href="${esc(b.url)}" target="_blank">${esc(b.title)}</a></div>
+          <div class="card-summary">${esc(b.summary)}</div>
+          ${date ? `<div class="card-date">${date}</div>` : ''}
+        </div>
+      </div>`;
+  }
+  if (!data.blogs.length) body += `<p class="empty">No new posts today.</p>`;
+  body += `</div>`;
+
+  // Practitioners
+  body += `<div class="section-title">Community & Practitioners</div>`;
+  for (const x of data.x) {
+    const initial = x.name.charAt(0).toUpperCase();
+    const role = (x.bio || '').split(',')[0];
+    for (const t of x.tweets) {
+      body += `
+        <div class="practitioner">
+          <div class="practitioner-avatar">${esc(initial)}</div>
+          <div class="practitioner-body">
+            <div class="practitioner-name">${esc(x.name)}</div>
+            <div class="practitioner-role">${esc(role)}</div>
+            <div class="practitioner-tweet">${esc(t.text)}</div>
+            <a class="practitioner-link" href="${esc(t.url)}" target="_blank">View on X →</a>
+          </div>
+        </div>`;
+    }
+  }
+  if (!data.x.length) body += `<p class="empty">No new posts from practitioners today.</p>`;
+
+  // Podcasts
+  body += `<div class="section-title">Podcasts & Videos</div>`;
+  if (data.podcasts.length) {
+    for (const p of data.podcasts) {
+      body += `<div class="card"><div class="card-body"><div class="card-source">${esc(p.name)}</div><div class="card-title"><a href="${esc(p.url)}" target="_blank">${esc(p.title)}</a></div></div></div>`;
+    }
+  } else {
+    body += `<p class="empty">No new episodes this week.</p>`;
+  }
+
+  return htmlShell('DevOps Digest', body);
+}
+
+function renderTextDigest(text) {
+  const body = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1">$1</a>')
+    .replace(/^## (.+)$/gm, '<h2 class="section-title">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\n{2,}/g, '</p><p style="margin:0.6rem 0">')
+    .replace(/\n/g, '<br>');
+  return htmlShell('DevOps Digest', `<div style="background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.08)"><p>${body}</p></div>`);
 }
 
 // -- Slack Delivery ----------------------------------------------------------
@@ -238,7 +348,7 @@ async function main() {
   }
 
   const delivery = config.delivery || { method: 'stdout' };
-  const digestText = await getDigestText();
+  const { text: digestText, isJson } = await getDigestInput();
 
   if (!digestText || digestText.trim().length === 0) {
     console.log(JSON.stringify({ status: 'skipped', reason: 'Empty digest text' }));
@@ -248,7 +358,7 @@ async function main() {
   try {
     switch (delivery.method) {
       case 'html': {
-        const outPath = await sendHtml(digestText);
+        const outPath = await sendHtml(digestText, isJson);
         console.log(JSON.stringify({ status: 'ok', method: 'html', message: `Digest opened in browser: ${outPath}` }));
         break;
       }
