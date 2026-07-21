@@ -122,6 +122,35 @@ async function sendTelegram(text, botToken, chatId) {
   }
 }
 
+// -- Slack Delivery ----------------------------------------------------------
+
+// Sends the digest via a Slack Incoming Webhook.
+// Create one at: https://api.slack.com/apps → Your App → Incoming Webhooks
+// No token or account beyond your existing Slack workspace needed.
+async function sendSlack(text, webhookUrl) {
+  // Slack blocks have a 3000 char limit per text block; split if needed
+  const MAX_LEN = 2900;
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= MAX_LEN) { chunks.push(remaining); break; }
+    let splitAt = remaining.lastIndexOf('\n', MAX_LEN);
+    if (splitAt < MAX_LEN * 0.5) splitAt = MAX_LEN;
+    chunks.push(remaining.slice(0, splitAt));
+    remaining = remaining.slice(splitAt);
+  }
+
+  for (const chunk of chunks) {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: chunk })
+    });
+    if (!res.ok) throw new Error(`Slack webhook error: ${res.status} ${await res.text()}`);
+    if (chunks.length > 1) await new Promise(r => setTimeout(r, 300));
+  }
+}
+
 // -- Email Delivery (Gmail SMTP) ---------------------------------------------
 
 // Sends the digest via Gmail SMTP using an App Password.
@@ -164,6 +193,14 @@ async function main() {
 
   try {
     switch (delivery.method) {
+      case 'slack': {
+        const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+        if (!webhookUrl) throw new Error('SLACK_WEBHOOK_URL not found in .env');
+        await sendSlack(digestText, webhookUrl);
+        console.log(JSON.stringify({ status: 'ok', method: 'slack', message: 'Digest sent to Slack' }));
+        break;
+      }
+
       case 'telegram': {
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = delivery.chatId;
