@@ -26,15 +26,15 @@ git clone https://github.com/xiaocongji/follow-devops.git ~/.claude/skills/follo
 cd ~/.claude/skills/follow-devops/scripts && npm install
 ```
 
-Then in Claude Code, type `/devops` to run the skill.
+Then in Claude Code, type `/follow-devops` to run the skill.
 
 ## Invoking
 
 ```
-/devops
+/follow-devops
 ```
 
-Type `/devops` anytime to get a fresh digest opened in your browser. No delivery setup required.
+Type `/follow-devops` anytime to get a fresh digest opened in your browser. No delivery setup required.
 
 ## Delivery Methods
 
